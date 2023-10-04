@@ -1,0 +1,120 @@
+version: '3.7'
+services:
+  database:
+    image: 'mysql:8.0'
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+    ports:
+      # To allow the host machine to access the ports below, modify the lines below.
+      # For example, to allow the host to connect to port 3306 on the container, you would change
+      # "3306" to "3306:3306". Where the first port is exposed to the host and the second is the container port.
+      # See https://docs.docker.com/compose/compose-file/#ports for more information.
+      - '3306:3306'
+    volumes:
+      - ../docker/volume:/var/lib/mysql
+    networks:
+      - frontend
+      - backend
+    links:
+      - docker-in-docker
+
+
+  ### Workspace Utilities ##################################
+  workspace:
+    build:
+      context: workspace
+      args:
+        - BASE_IMAGE_TAG_PREFIX=${WORKSPACE_BASE_IMAGE_TAG_PREFIX}
+        - LARADOCK_PHP_VERSION=${PHP_VERSION}
+        - INSTALL_SYMFONY=${WORKSPACE_INSTALL_SYMFONY}
+        - INSTALL_YARN=${WORKSPACE_INSTALL_YARN}
+        - YARN_VERSION=${WORKSPACE_YARN_VERSION}
+        - INSTALL_NODE=${WORKSPACE_INSTALL_NODE}
+        - NODE_VERSION=${WORKSPACE_NODE_VERSION}
+        - http_proxy
+        - https_proxy
+        - no_proxy
+    volumes:
+      - ${APP_CODE_PATH_HOST}:${APP_CODE_PATH_CONTAINER}${APP_CODE_CONTAINER_FLAG}
+      - docker-in-docker:/certs/client
+      - ./php-worker/supervisord.d:/etc/supervisord.d
+    extra_hosts:
+      - "dockerhost:${DOCKER_HOST_IP}"
+    ports:
+      - "${WORKSPACE_SSH_PORT}:22"
+      - "${WORKSPACE_BROWSERSYNC_HOST_PORT}:3000"
+      - "${WORKSPACE_BROWSERSYNC_UI_HOST_PORT}:3001"
+      - "8000:8000"
+      - "${WORKSPACE_VITE_PORT}:5173"
+    tty: true
+    environment:
+      - PHP_IDE_CONFIG=${PHP_IDE_CONFIG}
+      - DOCKER_HOST=tcp://docker-in-docker:2376
+      - DOCKER_TLS_VERIFY=1
+      - DOCKER_TLS_CERTDIR=/certs
+      - DOCKER_CERT_PATH=/certs/client
+      - CHOKIDAR_USEPOLLING=true
+    networks:
+      - frontend
+      - backend
+    links:
+      - docker-in-docker
+
+
+
+  ### PHP-FPM ##############################################
+  php-fpm:
+    build:
+      context: php-fpm
+      args:
+        - PHP_VERSION=${PHP_VERSION}
+        - PUID=${PHP_FPM_PUID}
+        - PGID=${PHP_FPM_PGID}
+        - http_proxy
+        - https_proxy
+        - no_proxy
+    volumes:
+      - ./php-fpm/php${PHP_VERSION}.ini:/usr/local/etc/php/php.ini
+      - ${APP_CODE_PATH_HOST}:${APP_CODE_PATH_CONTAINER}${APP_CODE_CONTAINER_FLAG}
+      - docker-in-docker:/certs/client
+    expose:
+      - "9000"
+    extra_hosts:
+      - "dockerhost:${DOCKER_HOST_IP}"
+    environment:
+      - PHP_IDE_CONFIG=${PHP_IDE_CONFIG}
+      - DOCKER_HOST=tcp://docker-in-docker:2376
+      - DOCKER_TLS_VERIFY=1
+      - DOCKER_TLS_CERTDIR=/certs
+      - DOCKER_CERT_PATH=/certs/client
+    networks:
+      - backend
+      - frontend
+    links:
+      - docker-in-docker
+
+
+  ### Docker-in-Docker ################################################
+  docker-in-docker:
+    image: docker:20.10-dind
+    environment:
+      DOCKER_TLS_SAN: DNS:docker-in-docker
+    privileged: true
+    volumes:
+      - ${APP_CODE_PATH_HOST}:${APP_CODE_PATH_CONTAINER}
+      - docker-in-docker:/certs/client
+    expose:
+      - 2375
+    networks:
+      - backend
+      - frontend
+
+networks:
+  frontend:
+    driver: ${NETWORKS_DRIVER}
+  backend:
+    driver: ${NETWORKS_DRIVER}
+
+volumes:
+  docker-in-docker:
+    driver: ${VOLUMES_DRIVER}
