@@ -1,16 +1,16 @@
 <?php
 
-namespace App\MessageHandler;
+namespace App\MessageHandler\Command;
 
-use App\Message\DeleteImagePost;
-//use App\Message\DeletePhotoFile;
-//use App\Photo\PhotoFileManager;
+use App\Message\Command\DeleteImagePost;
 use App\Message\Event\ImagePostDeletedEvent;
 use App\Repository\ImagePostRepository;
-use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Messenger\Handler\MessageHandlerInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
+
+//use App\Message\DeletePhotoFile;
+//use App\Photo\PhotoFileManager;
 
 class DeleteImagePostHandler implements MessageHandlerInterface
 {
