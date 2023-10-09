@@ -1,16 +1,15 @@
 <?php
 
-namespace App\MessageHandler;
+namespace App\MessageHandler\Command;
 
 use App\Entity\ImagePost;
-use App\Message\AddPonkaToImage;
+use App\Message\Command\AddPonkaToImage;
 use App\Photo\PhotoFileManager;
 use App\Photo\PhotoPonkaficator;
 use App\Repository\ImagePostRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
-use Psr\Log\LoggerInterface;
 use Symfony\Component\Messenger\Handler\MessageHandlerInterface;
 
 class AddPonkaToImageHandler implements MessageHandlerInterface, LoggerAwareInterface
